@@ -52,10 +52,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-fermento-dark px-4">
-      <div className="w-full max-w-sm bg-fermento-cream rounded-2xl shadow-2xl p-8">
+    <div className="relative min-h-dvh flex flex-col items-center justify-center bg-fermento-dark px-4 overflow-hidden">
+      {/* Fondo animado */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="login-blob-1 absolute -top-24 -left-20 w-72 h-72 rounded-full bg-fermento-red/30 blur-3xl" />
+        <div className="login-blob-2 absolute top-1/3 -right-24 w-80 h-80 rounded-full bg-fermento-red/20 blur-3xl" />
+        <div className="login-blob-3 absolute -bottom-24 left-1/4 w-64 h-64 rounded-full bg-fermento-cream/10 blur-3xl" />
+      </div>
+
+      <div className="login-card-enter relative w-full max-w-sm bg-fermento-cream/95 backdrop-blur rounded-2xl shadow-2xl p-8">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-fermento-dark flex items-center justify-center border-4 border-fermento-red mb-3 overflow-hidden">
+          <div className="login-logo-float w-20 h-20 rounded-full bg-fermento-dark flex items-center justify-center border-4 border-fermento-red mb-3 overflow-hidden">
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logoUrl} alt="Fermento" className="w-full h-full object-cover" />
