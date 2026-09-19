@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --fermento-red: #b3221a;
+  --fermento-dark: #1a1210;
+  --fermento-cream: #f5efe6;
+}
+
+body {
+  background-color: var(--fermento-cream);
+  color: var(--fermento-dark);
+}
+
+/* Recibo de cocina / factura: solo visible al imprimir */
+.print-only {
+  display: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-only,
+  .print-only * {
+    visibility: visible;
+  }
+  .print-only {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+}
