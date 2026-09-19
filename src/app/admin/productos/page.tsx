@@ -176,6 +176,11 @@ export default function ProductosPage() {
                         {p.active ? "Activo" : "Oculto"}
                       </span>
                     </div>
+                    {!p.requiere_preparacion && (
+                      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 mt-1">
+                        Sin preparación
+                      </span>
+                    )}
                     <p className="text-xs text-black/50 line-clamp-2">{p.description}</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {p.product_prices?.map((pr) => (
@@ -240,6 +245,9 @@ function ProductModal({
   const [name, setName] = useState(product?.name ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [imageUrl, setImageUrl] = useState(product?.image_url ?? "");
+  const [requierePreparacion, setRequierePreparacion] = useState(
+    product?.requiere_preparacion ?? true
+  );
   const [prices, setPrices] = useState<PriceDraft[]>(
     product?.product_prices?.length
       ? product.product_prices.map((p) => ({ id: p.id, size_label: p.size_label, price: String(p.price) }))
@@ -288,12 +296,24 @@ function ProductModal({
     if (product) {
       await supabase
         .from("products")
-        .update({ name, description, image_url: imageUrl || null, updated_at: new Date().toISOString() })
+        .update({
+          name,
+          description,
+          image_url: imageUrl || null,
+          requiere_preparacion: requierePreparacion,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", product.id);
     } else {
       const { data, error } = await supabase
         .from("products")
-        .insert({ category_id: categoryId, name, description, image_url: imageUrl || null })
+        .insert({
+          category_id: categoryId,
+          name,
+          description,
+          image_url: imageUrl || null,
+          requiere_preparacion: requierePreparacion,
+        })
         .select()
         .single();
       if (error || !data) {
@@ -357,6 +377,19 @@ function ProductModal({
           )}
           <input type="file" accept="image/*" onChange={handleImageChange} disabled={uploading} />
         </div>
+
+        <label className="flex items-center gap-2 text-sm mb-3">
+          <input
+            type="checkbox"
+            checked={requierePreparacion}
+            onChange={(e) => setRequierePreparacion(e.target.checked)}
+          />
+          Requiere preparación en cocina
+        </label>
+        <p className="text-xs text-black/40 -mt-2 mb-3">
+          Desmárcalo para bebidas u otros productos que no necesitan que cocina los despache (se
+          marcarán como despachados automáticamente al enviar el pedido).
+        </p>
 
         <label className="block text-sm font-medium mb-1">Presentaciones y precios</label>
         <div className="space-y-2 mb-2">

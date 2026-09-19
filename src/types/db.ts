@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "mesero";
+export type UserRole = "admin" | "mesero" | "cocina";
 
 export type Category = {
   id: string;
@@ -21,6 +21,7 @@ export type Product = {
   description: string | null;
   image_url: string | null;
   active: boolean;
+  requiere_preparacion: boolean;
   sort_order: number;
   product_prices?: ProductPrice[];
 };
@@ -43,6 +44,8 @@ export type Order = {
   opened_at: string;
   closed_at: string | null;
   invoice_printed: boolean;
+  archivada_cocina: boolean;
+  archivada_cocina_at: string | null;
 };
 
 export type ItemStatus = "pendiente" | "enviado";
@@ -56,6 +59,9 @@ export type OrderItem = {
   unit_price: number;
   quantity: number;
   status: ItemStatus;
+  requiere_preparacion: boolean;
+  despachado: boolean;
+  despachado_at: string | null;
   sent_at: string | null;
   created_at: string;
 };

@@ -13,6 +13,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link href="/mesas" className="hover:text-fermento-red transition font-semibold">
                 Tomar pedidos
               </Link>
+              <Link href="/despacho" className="hover:text-fermento-red transition">
+                Despacho
+              </Link>
               <Link href="/admin/productos" className="hover:text-fermento-red transition">
                 Productos
               </Link>

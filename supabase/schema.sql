@@ -6,7 +6,7 @@
 create extension if not exists "pgcrypto";
 
 -- ---------- ROLES / PERFILES ----------
-create type user_role as enum ('admin', 'mesero');
+create type user_role as enum ('admin', 'mesero', 'cocina');
 
 create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -60,6 +60,7 @@ create table products (
   description text default '',
   image_url text,
   active boolean not null default true,
+  requiere_preparacion boolean not null default true,
   sort_order int not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -94,7 +95,9 @@ create table orders (
   opened_at timestamptz not null default now(),
   closed_at timestamptz,
   closed_by uuid references profiles(id),
-  invoice_printed boolean not null default false
+  invoice_printed boolean not null default false,
+  archivada_cocina boolean not null default false,
+  archivada_cocina_at timestamptz
 );
 
 -- ---------- ITEMS DEL PEDIDO ----------
@@ -109,6 +112,9 @@ create table order_items (
   unit_price numeric(10,2) not null,
   quantity int not null check (quantity > 0),
   status item_status not null default 'pendiente',
+  requiere_preparacion boolean not null default true,
+  despachado boolean not null default false,
+  despachado_at timestamptz,
   sent_at timestamptz,
   created_at timestamptz not null default now()
 );
@@ -202,6 +208,44 @@ create policy "items_delete" on order_items
   for delete using (auth.uid() is not null);
 
 -- ============================================================
+-- Trigger: solo cocina/admin pueden marcar items despachados o
+-- archivar una mesa en la cola de despacho (mesero no puede).
+-- ============================================================
+create or replace function public.guard_cocina_only_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if TG_TABLE_NAME = 'order_items' then
+    -- Los productos sin preparación (ej. bebidas) se auto-despachan desde
+    -- la app de mesero al enviar el pedido; solo se protege marcar como
+    -- despachado (no desmarcar, que mesero puede necesitar al editar el
+    -- carrito) un producto que sí requiere preparación.
+    if NEW.despachado and not OLD.despachado
+       and NEW.requiere_preparacion
+       and current_role() not in ('admin', 'cocina') then
+      raise exception 'Solo cocina o admin pueden marcar productos como despachados';
+    end if;
+  elsif TG_TABLE_NAME = 'orders' then
+    if NEW.archivada_cocina is distinct from OLD.archivada_cocina and current_role() not in ('admin', 'cocina') then
+      raise exception 'Solo cocina o admin pueden archivar mesas';
+    end if;
+  end if;
+  return NEW;
+end;
+$$;
+
+create trigger guard_items_despachado
+  before update on order_items
+  for each row execute procedure public.guard_cocina_only_fields();
+
+create trigger guard_orders_archivada_cocina
+  before update on orders
+  for each row execute procedure public.guard_cocina_only_fields();
+
+-- ============================================================
 -- Trigger: crear perfil automáticamente al crear un usuario auth
 -- (el rol se fija manualmente después vía SQL, ver README)
 -- ============================================================
@@ -244,3 +288,53 @@ create policy "product_images_admin_update"
 create policy "product_images_admin_delete"
   on storage.objects for delete
   using (bucket_id = 'product-images' and is_admin());
+
+-- ============================================================
+-- MIGRACIÓN: cola de despacho / cocina (2026-09-19)
+-- Ejecutar SOLO si la base de datos ya existía antes de este cambio
+-- (un proyecto nuevo ya crea todo esto con lo de arriba).
+-- Ejecutar el ALTER TYPE en su propia sentencia/run, separado del resto.
+-- ============================================================
+-- 1) Ejecutar primero, solo:
+-- alter type user_role add value if not exists 'cocina';
+--
+-- 2) Luego, el resto:
+-- alter table products add column if not exists requiere_preparacion boolean not null default true;
+-- alter table order_items add column if not exists requiere_preparacion boolean not null default true;
+-- alter table order_items add column if not exists despachado boolean not null default false;
+-- alter table order_items add column if not exists despachado_at timestamptz;
+-- alter table orders add column if not exists archivada_cocina boolean not null default false;
+-- alter table orders add column if not exists archivada_cocina_at timestamptz;
+--
+-- 3) Trigger de protección (solo cocina/admin marcan despachado o archivan):
+-- create or replace function public.guard_cocina_only_fields()
+-- returns trigger
+-- language plpgsql
+-- security definer
+-- set search_path = public
+-- as $$
+-- begin
+--   if TG_TABLE_NAME = 'order_items' then
+--     if NEW.despachado and not OLD.despachado
+--        and NEW.requiere_preparacion
+--        and current_role() not in ('admin', 'cocina') then
+--       raise exception 'Solo cocina o admin pueden marcar productos como despachados';
+--     end if;
+--   elsif TG_TABLE_NAME = 'orders' then
+--     if NEW.archivada_cocina is distinct from OLD.archivada_cocina and current_role() not in ('admin', 'cocina') then
+--       raise exception 'Solo cocina o admin pueden archivar mesas';
+--     end if;
+--   end if;
+--   return NEW;
+-- end;
+-- $$;
+--
+-- drop trigger if exists guard_items_despachado on order_items;
+-- create trigger guard_items_despachado
+--   before update on order_items
+--   for each row execute procedure public.guard_cocina_only_fields();
+--
+-- drop trigger if exists guard_orders_archivada_cocina on orders;
+-- create trigger guard_orders_archivada_cocina
+--   before update on orders
+--   for each row execute procedure public.guard_cocina_only_fields();

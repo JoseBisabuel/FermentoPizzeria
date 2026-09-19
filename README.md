@@ -41,6 +41,21 @@ where id = (select id from auth.users where email = 'adminfermento@fermento.loca
 El usuario `serviciofermento` queda como `mesero` (rol correcto por defecto, no puede crear,
 editar ni eliminar productos, ni ver reportes).
 
+### Usuario de cocina/despacho (opcional)
+
+Existe un tercer rol, `cocina`, que solo ve `/despacho`: la cola de pedidos enviados a cocina,
+para marcarlos como despachados sin acceso a mesas ni al panel admin. Si el proyecto ya
+existía antes de esta función, primero corre la migración al final de
+[`supabase/schema.sql`](supabase/schema.sql) (el bloque "MIGRACIÓN: cola de despacho / cocina").
+
+Para crear el usuario: repite el paso de **Authentication → Users → Add user** (ej.
+`cocinafermento@fermento.local`) y luego:
+
+```sql
+update profiles set role = 'cocina'
+where id = (select id from auth.users where email = 'cocinafermento@fermento.local');
+```
+
 ## 3. Variables de entorno locales
 
 Copia `.env.local.example` a `.env.local` y completa con tus datos del paso 1:
@@ -108,6 +123,7 @@ Sube el repo a GitHub y luego en [vercel.com](https://vercel.com):
 src/app/login          → pantalla de login (admin / mesas)
 src/app/admin          → panel admin: productos, mesas, reportes, ajustes
 src/app/mesas          → vista de mesas y pantalla de pedido por mesa
+src/app/despacho       → cola de pedidos para cocina (rol cocina)
 supabase/schema.sql    → tablas, roles y seguridad (RLS)
 supabase/seed.sql      → menú inicial de Fermento
 ```

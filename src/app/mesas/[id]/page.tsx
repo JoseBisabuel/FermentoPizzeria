@@ -128,6 +128,7 @@ export default function TableOrderPage() {
         unit_price: price.price,
         quantity: 1,
         status: "pendiente",
+        requiere_preparacion: product.requiere_preparacion,
       });
     }
     loadTableAndOrder();
@@ -145,6 +146,12 @@ export default function TableOrderPage() {
     const newQty = item.quantity + delta;
     if (newQty <= 0) {
       await supabase.from("order_items").delete().eq("id", item.id);
+    } else if (item.status === "enviado" && item.despachado && item.requiere_preparacion) {
+      // Si ya estaba despachado y cambia la cantidad, vuelve a quedar pendiente en cocina.
+      await supabase
+        .from("order_items")
+        .update({ quantity: newQty, despachado: false, despachado_at: null })
+        .eq("id", item.id);
     } else {
       await supabase.from("order_items").update({ quantity: newQty }).eq("id", item.id);
     }
@@ -159,13 +166,20 @@ export default function TableOrderPage() {
   async function confirmAndPrint() {
     if (pendingItems.length === 0) return;
     const now = new Date().toISOString();
-    await supabase
-      .from("order_items")
-      .update({ status: "enviado", sent_at: now })
-      .in(
-        "id",
-        pendingItems.map((i) => i.id)
-      );
+    const needsPrepIds = pendingItems.filter((i) => i.requiere_preparacion).map((i) => i.id);
+    const autoDespachoIds = pendingItems.filter((i) => !i.requiere_preparacion).map((i) => i.id);
+    if (needsPrepIds.length > 0) {
+      await supabase
+        .from("order_items")
+        .update({ status: "enviado", sent_at: now })
+        .in("id", needsPrepIds);
+    }
+    if (autoDespachoIds.length > 0) {
+      await supabase
+        .from("order_items")
+        .update({ status: "enviado", sent_at: now, despachado: true, despachado_at: now })
+        .in("id", autoDespachoIds);
+    }
     dialog.toast("Pedido enviado a cocina");
     if (printingEnabled) {
       setPrintPayload(pendingItems);

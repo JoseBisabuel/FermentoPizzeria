@@ -37,24 +37,31 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && path === "/login") {
+  if (user && (path === "/login" || path.startsWith("/admin") || path.startsWith("/mesas") || path.startsWith("/despacho"))) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
-    const url = request.nextUrl.clone();
-    url.pathname = profile?.role === "admin" ? "/admin" : "/mesas";
-    return NextResponse.redirect(url);
-  }
+    const role = profile?.role;
+    const homeFor = (r: typeof role) => (r === "admin" ? "/admin" : r === "cocina" ? "/despacho" : "/mesas");
 
-  if (user && path.startsWith("/admin")) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    if (profile?.role !== "admin") {
+    if (path === "/login") {
+      const url = request.nextUrl.clone();
+      url.pathname = homeFor(role);
+      return NextResponse.redirect(url);
+    }
+    if (path.startsWith("/admin") && role !== "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = homeFor(role);
+      return NextResponse.redirect(url);
+    }
+    if (path.startsWith("/mesas") && role === "cocina") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/despacho";
+      return NextResponse.redirect(url);
+    }
+    if (path.startsWith("/despacho") && role === "mesero") {
       const url = request.nextUrl.clone();
       url.pathname = "/mesas";
       return NextResponse.redirect(url);
