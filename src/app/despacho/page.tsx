@@ -41,6 +41,7 @@ export default function DespachoPage() {
   const [orders, setOrders] = useState<OrderWithExtras[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [alertGlow, setAlertGlow] = useState(false);
   const [, setTick] = useState(0);
   const seenItemIds = useRef<Set<string> | null>(null);
 
@@ -66,6 +67,8 @@ export default function DespachoPage() {
       if (newIds.length > 0) {
         dialog.toast("Nuevo pedido para preparar");
         playBeep();
+        setAlertGlow(true);
+        setTimeout(() => setAlertGlow(false), 3000);
       }
     }
     seenItemIds.current = currentIds;
@@ -81,8 +84,12 @@ export default function DespachoPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, load)
       .subscribe();
+    // Respaldo por si el realtime de Supabase no está habilitado para estas
+    // tablas (Database > Replication): revisa igual cada 15s.
+    const poll = setInterval(load, 15000);
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(poll);
     };
   }, [supabase, load]);
 
@@ -135,6 +142,10 @@ export default function DespachoPage() {
 
   return (
     <div>
+      {alertGlow && (
+        <div className="fixed inset-0 pointer-events-none z-[90] despacho-alert-glow" />
+      )}
+
       <h1 className="text-2xl font-bold text-fermento-red mb-6">Despacho</h1>
 
       {orders.length === 0 && (

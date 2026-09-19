@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 
 type ConfirmOptions = { title?: string; message: string; confirmText?: string; cancelText?: string };
 type AlertOptions = { title?: string; message: string };
@@ -48,8 +48,10 @@ export default function DialogProvider({ children }: { children: React.ReactNode
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
   }, []);
 
+  const value = useMemo(() => ({ confirm, alert: alertFn, toast }), [confirm, alertFn, toast]);
+
   return (
-    <DialogContext.Provider value={{ confirm, alert: alertFn, toast }}>
+    <DialogContext.Provider value={value}>
       {children}
 
       {confirmState && (
