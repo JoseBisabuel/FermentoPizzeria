@@ -52,7 +52,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-fermento-dark px-4">
+    <div className="min-h-dvh flex flex-col items-center justify-center bg-fermento-dark px-4">
       <div className="w-full max-w-sm bg-fermento-cream rounded-2xl shadow-2xl p-8">
         <div className="flex flex-col items-center mb-6">
           <div className="w-20 h-20 rounded-full bg-fermento-dark flex items-center justify-center border-4 border-fermento-red mb-3 overflow-hidden">
@@ -65,7 +65,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-extrabold text-fermento-red tracking-tight">FERMENTO</h1>
           <p className="text-xs uppercase tracking-widest text-fermento-dark/60">
-            Pizzería Artesanal Oculta
+            Pizzería Artesanal
           </p>
         </div>
 
@@ -110,8 +110,8 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
-      <div className="mt-4 [&_footer]:text-fermento-cream/50 [&_a]:text-fermento-cream">
-        <Footer />
+      <div className="mt-4">
+        <Footer variant="light" />
       </div>
     </div>
   );

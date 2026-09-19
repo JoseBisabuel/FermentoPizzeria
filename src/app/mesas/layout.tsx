@@ -20,7 +20,7 @@ export default async function MesasLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="min-h-screen bg-fermento-cream flex flex-col">
+    <div className="min-h-dvh bg-fermento-cream flex flex-col">
       <header className="bg-fermento-dark text-fermento-cream">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-4">
@@ -34,7 +34,7 @@ export default async function MesasLayout({ children }: { children: React.ReactN
           <LogoutButton />
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">{children}</main>
+      <main className="max-w-6xl mx-auto px-4 pt-6 pb-12 flex-1 w-full">{children}</main>
       <Footer />
     </div>
   );

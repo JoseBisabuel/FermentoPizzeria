@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-fermento-cream flex flex-col">
+    <div className="min-h-dvh bg-fermento-cream flex flex-col">
       <header className="bg-fermento-dark text-fermento-cream">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-6 flex-wrap">
@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <LogoutButton />
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-4 py-8 flex-1 w-full">{children}</main>
+      <main className="max-w-6xl mx-auto px-4 pt-8 pb-12 flex-1 w-full">{children}</main>
       <Footer />
     </div>
   );

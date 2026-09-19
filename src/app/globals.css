@@ -11,6 +11,9 @@
 body {
   background-color: var(--fermento-cream);
   color: var(--fermento-dark);
+  /* Evita que el contenido quede oculto detrás de la barra/indicador
+     del navegador en celulares con pantallas grandes (ej. iPhone 16). */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @keyframes tap-flash {

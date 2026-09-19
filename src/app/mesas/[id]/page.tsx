@@ -280,7 +280,7 @@ export default function TableOrderPage() {
         </div>
 
         {/* Carrito */}
-        <div className="bg-white rounded-2xl shadow p-4 h-fit lg:sticky lg:top-4">
+        <div className="bg-white rounded-2xl shadow p-4 mb-8 h-fit lg:sticky lg:top-4">
           <h2 className="font-bold mb-3">Pedido</h2>
 
           {pendingItems.length > 0 && (
