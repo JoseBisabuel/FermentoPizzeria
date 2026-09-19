@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useDialog } from "@/components/DialogProvider";
 import type { Settings } from "@/types/db";
+
+const SOPORTE_WHATSAPP = "573193034610";
 
 export default function AjustesPage() {
   const supabase = createClient();
+  const dialog = useDialog();
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [whatsapp, setWhatsapp] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -21,7 +24,6 @@ export default function AjustesPage() {
       .then(({ data }) => {
         if (data) {
           setSettings(data);
-          setWhatsapp(data.whatsapp_number ?? "");
           setBusinessName(data.business_name ?? "");
         }
       });
@@ -39,19 +41,16 @@ export default function AjustesPage() {
       await supabase.from("settings").update({ logo_url: data.publicUrl }).eq("id", 1);
       setSettings((prev) => (prev ? { ...prev, logo_url: data.publicUrl } : prev));
     } else {
-      alert("Error subiendo el logo");
+      await dialog.alert("Error subiendo el logo");
     }
     setUploading(false);
   }
 
   async function saveSettings() {
     setSaving(true);
-    await supabase
-      .from("settings")
-      .update({ whatsapp_number: whatsapp, business_name: businessName })
-      .eq("id", 1);
+    await supabase.from("settings").update({ business_name: businessName }).eq("id", 1);
     setSaving(false);
-    alert("Ajustes guardados");
+    dialog.toast("Ajustes guardados");
   }
 
   return (
@@ -74,14 +73,6 @@ export default function AjustesPage() {
         className="w-full border rounded-lg px-3 py-2 mb-4"
       />
 
-      <label className="block text-sm font-medium mb-1">WhatsApp de contacto (código país + número)</label>
-      <input
-        value={whatsapp}
-        onChange={(e) => setWhatsapp(e.target.value)}
-        placeholder="573193034610"
-        className="w-full border rounded-lg px-3 py-2 mb-4"
-      />
-
       <button
         onClick={saveSettings}
         disabled={saving}
@@ -89,6 +80,21 @@ export default function AjustesPage() {
       >
         {saving ? "Guardando..." : "Guardar ajustes"}
       </button>
+
+      <div className="mt-8 bg-white rounded-xl shadow p-4">
+        <h2 className="font-semibold mb-1">Soporte</h2>
+        <p className="text-sm text-black/60 mb-3">
+          ¿Tienes un problema con el sistema o necesitas un ajuste? Escríbenos directo por WhatsApp.
+        </p>
+        <a
+          href={`https://wa.me/${SOPORTE_WHATSAPP}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block bg-fermento-dark text-white text-sm px-4 py-2 rounded-lg hover:opacity-90"
+        >
+          Contactar soporte (Nova Studio)
+        </a>
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import * as XLSX from "xlsx";
 
 type ReportRow = {
   product_name: string;
@@ -21,6 +22,7 @@ export default function ReportesPage() {
   const [to, setTo] = useState(todayStr());
   const [rows, setRows] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
   const [grandTotal, setGrandTotal] = useState(0);
 
   async function runReport() {
@@ -37,6 +39,8 @@ export default function ReportesPage() {
 
     if (error || !data) {
       setLoading(false);
+      setSearched(true);
+      setRows([]);
       return;
     }
 
@@ -64,6 +68,28 @@ export default function ReportesPage() {
     setRows(list);
     setGrandTotal(list.reduce((acc, r) => acc + r.total, 0));
     setLoading(false);
+    setSearched(true);
+  }
+
+  function exportToExcel() {
+    const data = rows.map((r) => ({
+      Producto: r.product_name,
+      Presentación: r.size_label,
+      Cantidad: r.quantity,
+      "Precio unidad": r.unit_price,
+      Total: r.total,
+    }));
+    data.push({
+      Producto: "TOTAL GENERAL",
+      Presentación: "",
+      Cantidad: "" as unknown as number,
+      "Precio unidad": "" as unknown as number,
+      Total: grandTotal,
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+    XLSX.writeFile(wb, `fermento-reporte-${from}_a_${to}.xlsx`);
   }
 
   return (
@@ -96,11 +122,19 @@ export default function ReportesPage() {
         >
           {loading ? "Consultando..." : "Generar reporte"}
         </button>
+        {rows.length > 0 && (
+          <button
+            onClick={exportToExcel}
+            className="bg-fermento-dark text-white px-4 py-2 rounded-lg text-sm hover:opacity-90"
+          >
+            Descargar Excel
+          </button>
+        )}
       </div>
 
       {rows.length > 0 && (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl shadow overflow-x-auto">
+          <table className="w-full text-sm min-w-[560px]">
             <thead className="bg-fermento-dark text-fermento-cream">
               <tr>
                 <th className="text-left px-4 py-2">Producto</th>
@@ -135,7 +169,11 @@ export default function ReportesPage() {
         </div>
       )}
 
-      {!loading && rows.length === 0 && (
+      {!loading && searched && rows.length === 0 && (
+        <p className="text-sm text-black/50">No hay ventas registradas en ese rango de fechas.</p>
+      )}
+
+      {!loading && !searched && (
         <p className="text-sm text-black/40">Selecciona un rango de fechas y genera el reporte.</p>
       )}
     </div>

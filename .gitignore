@@ -28,6 +28,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# auto-generado por next dev, se regenera solo
+/AGENTS.md
+/CLAUDE.md
+
 # scaffold antiguo sin relación (prototipo previo en esta carpeta)
 /index.html
 /script.js

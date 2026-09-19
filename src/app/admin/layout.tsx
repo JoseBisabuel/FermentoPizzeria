@@ -4,17 +4,20 @@ import Footer from "@/components/Footer";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-fermento-cream">
+    <div className="min-h-screen bg-fermento-cream flex flex-col">
       <header className="bg-fermento-dark text-fermento-cream">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-6 flex-wrap">
             <span className="font-extrabold text-fermento-red text-lg tracking-tight">FERMENTO</span>
-            <nav className="flex gap-4 text-sm">
+            <nav className="flex gap-4 text-sm flex-wrap">
+              <Link href="/mesas" className="hover:text-fermento-red transition font-semibold">
+                Tomar pedidos
+              </Link>
               <Link href="/admin/productos" className="hover:text-fermento-red transition">
                 Productos
               </Link>
               <Link href="/admin/mesas" className="hover:text-fermento-red transition">
-                Mesas
+                Gestionar mesas
               </Link>
               <Link href="/admin/reportes" className="hover:text-fermento-red transition">
                 Reportes
@@ -27,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <LogoutButton />
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-4 py-8">{children}</main>
+      <main className="max-w-6xl mx-auto px-4 py-8 flex-1 w-full">{children}</main>
       <Footer />
     </div>
   );

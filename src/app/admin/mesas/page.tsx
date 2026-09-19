@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useDialog } from "@/components/DialogProvider";
 import type { RestaurantTable } from "@/types/db";
 
 export default function AdminMesasPage() {
   const supabase = createClient();
+  const dialog = useDialog();
   const [tables, setTables] = useState<RestaurantTable[]>([]);
   const [newName, setNewName] = useState("");
 
@@ -28,9 +30,18 @@ export default function AdminMesasPage() {
   }
 
   async function removeTable(id: string) {
-    if (!confirm("¿Eliminar esta mesa?")) return;
+    const confirmed = await dialog.confirm({
+      title: "Eliminar mesa",
+      message: "¿Eliminar esta mesa?",
+      confirmText: "Eliminar",
+    });
+    if (!confirmed) return;
     const { error } = await supabase.from("restaurant_tables").delete().eq("id", id);
-    if (error) alert("No se puede eliminar una mesa con pedidos asociados.");
+    if (error) {
+      await dialog.alert("No se puede eliminar una mesa con pedidos asociados.");
+    } else {
+      dialog.toast("Mesa eliminada");
+    }
     load();
   }
 

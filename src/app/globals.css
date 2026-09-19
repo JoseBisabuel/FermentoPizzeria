@@ -13,6 +13,22 @@ body {
   color: var(--fermento-dark);
 }
 
+@keyframes tap-flash {
+  0% {
+    background-color: var(--fermento-red);
+    color: #ffffff;
+    border-color: var(--fermento-red);
+  }
+  100% {
+    background-color: var(--fermento-cream);
+    color: var(--fermento-dark);
+    border-color: rgba(179, 34, 26, 0.3);
+  }
+}
+.tap-flash {
+  animation: tap-flash 0.45s ease-out;
+}
+
 /* Recibo de cocina / factura: solo visible al imprimir */
 .print-only {
   display: none;

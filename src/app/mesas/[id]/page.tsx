@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useDialog } from "@/components/DialogProvider";
 import type { Category, Product, ProductPrice, RestaurantTable, Order, OrderItem } from "@/types/db";
 
 type ProductWithPrices = Product & { product_prices: ProductPrice[] };
@@ -11,6 +12,7 @@ export default function TableOrderPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const supabase = createClient();
+  const dialog = useDialog();
 
   const [table, setTable] = useState<RestaurantTable | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
@@ -20,6 +22,7 @@ export default function TableOrderPage() {
   const [products, setProducts] = useState<ProductWithPrices[]>([]);
   const [printMode, setPrintMode] = useState<"comanda" | "factura" | null>(null);
   const [printPayload, setPrintPayload] = useState<OrderItem[]>([]);
+  const [flashingPriceId, setFlashingPriceId] = useState<string | null>(null);
 
   const loadTableAndOrder = useCallback(async () => {
     const { data: t } = await supabase.from("restaurant_tables").select("*").eq("id", id).single();
@@ -120,6 +123,14 @@ export default function TableOrderPage() {
     loadTableAndOrder();
   }
 
+  function handleAddClick(product: ProductWithPrices, price: ProductPrice) {
+    addToCart(product, price);
+    setFlashingPriceId(price.id);
+    setTimeout(() => {
+      setFlashingPriceId((current) => (current === price.id ? null : current));
+    }, 450);
+  }
+
   async function changeQuantity(item: OrderItem, delta: number) {
     const newQty = item.quantity + delta;
     if (newQty <= 0) {
@@ -147,16 +158,25 @@ export default function TableOrderPage() {
       );
     setPrintPayload(pendingItems);
     setPrintMode("comanda");
+    dialog.toast("Pedido enviado a cocina");
     await loadTableAndOrder();
   }
 
   async function closeTable() {
     if (!order) return;
     if (pendingItems.length > 0) {
-      alert("Confirma los productos pendientes antes de cerrar la mesa.");
+      await dialog.alert({
+        title: "Productos pendientes",
+        message: "Confirma los productos pendientes antes de cerrar la mesa.",
+      });
       return;
     }
-    const wantsInvoice = confirm("¿Desea imprimir factura?");
+    const wantsInvoice = await dialog.confirm({
+      title: "Cerrar mesa",
+      message: "¿Desea imprimir factura?",
+      confirmText: "Sí, imprimir",
+      cancelText: "No",
+    });
     if (wantsInvoice) {
       setPrintPayload(items);
       setPrintMode("factura");
@@ -167,6 +187,7 @@ export default function TableOrderPage() {
       .eq("id", order.id);
     await supabase.from("restaurant_tables").update({ status: "libre" }).eq("id", id);
     if (!wantsInvoice) {
+      dialog.toast("Mesa cerrada");
       router.push("/mesas");
     }
   }
@@ -224,24 +245,26 @@ export default function TableOrderPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {products.map((p) => (
-              <div key={p.id} className="bg-white rounded-xl shadow p-3 flex gap-3">
-                <div className="w-16 h-16 rounded-lg bg-black/5 overflow-hidden flex-shrink-0">
+              <div key={p.id} className="bg-white rounded-xl shadow p-3 flex flex-col gap-2">
+                <div className="w-full h-24 rounded-lg bg-black/5 overflow-hidden flex-shrink-0">
                   {p.image_url && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0">
                   <h3 className="font-semibold text-sm">{p.name}</h3>
                   <p className="text-xs text-black/50 line-clamp-2 mb-1">{p.description}</p>
                   <div className="flex flex-wrap gap-1">
                     {p.product_prices?.map((price) => (
                       <button
                         key={price.id}
-                        onClick={() => addToCart(p, price)}
-                        className="text-xs bg-fermento-cream border border-fermento-red/30 rounded-lg px-2 py-1 hover:bg-fermento-red hover:text-white transition"
+                        onClick={() => handleAddClick(p, price)}
+                        className={`text-xs bg-fermento-cream border border-fermento-red/30 rounded-lg px-2 py-1 ${
+                          flashingPriceId === price.id ? "tap-flash" : ""
+                        }`}
                       >
                         {price.size_label} · ${Number(price.price).toLocaleString("es-CO")}
                       </button>
@@ -257,7 +280,7 @@ export default function TableOrderPage() {
         </div>
 
         {/* Carrito */}
-        <div className="bg-white rounded-2xl shadow p-4 h-fit sticky top-4">
+        <div className="bg-white rounded-2xl shadow p-4 h-fit lg:sticky lg:top-4">
           <h2 className="font-bold mb-3">Pedido</h2>
 
           {pendingItems.length > 0 && (

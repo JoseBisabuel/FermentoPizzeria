@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import DialogProvider from "@/components/DialogProvider";
 
 // Toda la app depende de sesión de usuario y datos en vivo de Supabase,
 // así que no tiene sentido pre-renderizarla como estática en el build.
@@ -17,7 +18,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <DialogProvider>{children}</DialogProvider>
+      </body>
     </html>
   );
 }

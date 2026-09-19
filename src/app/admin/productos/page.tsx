@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useDialog } from "@/components/DialogProvider";
 import type { Category, Product, ProductPrice } from "@/types/db";
 
 type ProductWithPrices = Product & { product_prices: ProductPrice[] };
@@ -10,6 +11,7 @@ type PriceDraft = { id?: string; size_label: string; price: string };
 
 export default function ProductosPage() {
   const supabase = createClient();
+  const dialog = useDialog();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [products, setProducts] = useState<ProductWithPrices[]>([]);
@@ -55,9 +57,18 @@ export default function ProductosPage() {
   }
 
   async function deleteCategory(id: string) {
-    if (!confirm("¿Eliminar esta categoría? Debe estar vacía de productos.")) return;
+    const confirmed = await dialog.confirm({
+      title: "Eliminar categoría",
+      message: "¿Eliminar esta categoría? Debe estar vacía de productos.",
+      confirmText: "Eliminar",
+    });
+    if (!confirmed) return;
     const { error } = await supabase.from("categories").delete().eq("id", id);
-    if (error) alert("No se pudo eliminar: mueve o elimina primero sus productos.");
+    if (error) {
+      await dialog.alert("No se pudo eliminar: mueve o elimina primero sus productos.");
+    } else {
+      dialog.toast("Categoría eliminada");
+    }
     loadCategories();
   }
 
@@ -67,8 +78,14 @@ export default function ProductosPage() {
   }
 
   async function deleteProduct(id: string) {
-    if (!confirm("¿Eliminar este producto definitivamente?")) return;
+    const confirmed = await dialog.confirm({
+      title: "Eliminar producto",
+      message: "¿Eliminar este producto definitivamente?",
+      confirmText: "Eliminar",
+    });
+    if (!confirmed) return;
     await supabase.from("products").delete().eq("id", id);
+    dialog.toast("Producto eliminado");
     loadProducts();
   }
 
@@ -139,10 +156,10 @@ export default function ProductosPage() {
           {loading ? (
             <p className="text-sm text-black/50">Cargando...</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
               {products.map((p) => (
-                <div key={p.id} className="bg-white rounded-xl shadow p-3 flex gap-3">
-                  <div className="w-20 h-20 rounded-lg bg-black/5 overflow-hidden flex-shrink-0">
+                <div key={p.id} className="bg-white rounded-xl shadow p-3 flex flex-col gap-2">
+                  <div className="w-full h-24 rounded-lg bg-black/5 overflow-hidden flex-shrink-0">
                     {p.image_url && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
@@ -219,6 +236,7 @@ function ProductModal({
   onSaved: () => void;
 }) {
   const supabase = createClient();
+  const dialog = useDialog();
   const [name, setName] = useState(product?.name ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [imageUrl, setImageUrl] = useState(product?.image_url ?? "");
@@ -253,14 +271,14 @@ function ProductModal({
       const { data } = supabase.storage.from("product-images").getPublicUrl(path);
       setImageUrl(data.publicUrl);
     } else {
-      alert("Error subiendo la imagen");
+      await dialog.alert("Error subiendo la imagen");
     }
     setUploading(false);
   }
 
   async function handleSave() {
     if (!name.trim() || prices.some((p) => !p.size_label.trim() || !p.price)) {
-      alert("Completa el nombre y todas las presentaciones con su precio.");
+      await dialog.alert("Completa el nombre y todas las presentaciones con su precio.");
       return;
     }
     setSaving(true);
@@ -279,7 +297,7 @@ function ProductModal({
         .select()
         .single();
       if (error || !data) {
-        alert("Error creando el producto");
+        await dialog.alert("Error creando el producto");
         setSaving(false);
         return;
       }
@@ -307,6 +325,7 @@ function ProductModal({
     }
 
     setSaving(false);
+    dialog.toast(product ? "Producto actualizado" : "Producto creado");
     onSaved();
   }
 
