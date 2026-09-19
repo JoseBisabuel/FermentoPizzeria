@@ -23,6 +23,16 @@ export default function TableOrderPage() {
   const [printMode, setPrintMode] = useState<"comanda" | "factura" | null>(null);
   const [printPayload, setPrintPayload] = useState<OrderItem[]>([]);
   const [flashingPriceId, setFlashingPriceId] = useState<string | null>(null);
+  const [printingEnabled, setPrintingEnabled] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("settings")
+      .select("printing_enabled")
+      .eq("id", 1)
+      .single()
+      .then(({ data }) => setPrintingEnabled(data?.printing_enabled ?? true));
+  }, [supabase]);
 
   const loadTableAndOrder = useCallback(async () => {
     const { data: t } = await supabase.from("restaurant_tables").select("*").eq("id", id).single();
@@ -156,9 +166,11 @@ export default function TableOrderPage() {
         "id",
         pendingItems.map((i) => i.id)
       );
-    setPrintPayload(pendingItems);
-    setPrintMode("comanda");
     dialog.toast("Pedido enviado a cocina");
+    if (printingEnabled) {
+      setPrintPayload(pendingItems);
+      setPrintMode("comanda");
+    }
     await loadTableAndOrder();
   }
 
@@ -171,16 +183,21 @@ export default function TableOrderPage() {
       });
       return;
     }
-    const wantsInvoice = await dialog.confirm({
-      title: "Cerrar mesa",
-      message: "¿Desea imprimir factura?",
-      confirmText: "Sí, imprimir",
-      cancelText: "No",
-    });
-    if (wantsInvoice) {
-      setPrintPayload(items);
-      setPrintMode("factura");
+
+    let wantsInvoice = false;
+    if (printingEnabled) {
+      wantsInvoice = await dialog.confirm({
+        title: "Cerrar mesa",
+        message: "¿Desea imprimir factura?",
+        confirmText: "Sí, imprimir",
+        cancelText: "No",
+      });
+      if (wantsInvoice) {
+        setPrintPayload(items);
+        setPrintMode("factura");
+      }
     }
+
     await supabase
       .from("orders")
       .update({ status: "cerrada", closed_at: new Date().toISOString(), invoice_printed: wantsInvoice })

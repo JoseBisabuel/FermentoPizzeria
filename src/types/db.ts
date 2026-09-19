@@ -65,4 +65,5 @@ export type Settings = {
   logo_url: string | null;
   whatsapp_number: string | null;
   business_name: string | null;
+  printing_enabled: boolean;
 };
