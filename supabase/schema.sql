@@ -225,11 +225,11 @@ begin
     -- carrito) un producto que sí requiere preparación.
     if NEW.despachado and not OLD.despachado
        and NEW.requiere_preparacion
-       and current_role() not in ('admin', 'cocina') then
+       and public.current_role() not in ('admin', 'cocina') then
       raise exception 'Solo cocina o admin pueden marcar productos como despachados';
     end if;
   elsif TG_TABLE_NAME = 'orders' then
-    if NEW.archivada_cocina is distinct from OLD.archivada_cocina and current_role() not in ('admin', 'cocina') then
+    if NEW.archivada_cocina is distinct from OLD.archivada_cocina and public.current_role() not in ('admin', 'cocina') then
       raise exception 'Solo cocina o admin pueden archivar mesas';
     end if;
   end if;
@@ -317,11 +317,11 @@ create policy "product_images_admin_delete"
 --   if TG_TABLE_NAME = 'order_items' then
 --     if NEW.despachado and not OLD.despachado
 --        and NEW.requiere_preparacion
---        and current_role() not in ('admin', 'cocina') then
+--        and public.current_role() not in ('admin', 'cocina') then
 --       raise exception 'Solo cocina o admin pueden marcar productos como despachados';
 --     end if;
 --   elsif TG_TABLE_NAME = 'orders' then
---     if NEW.archivada_cocina is distinct from OLD.archivada_cocina and current_role() not in ('admin', 'cocina') then
+--     if NEW.archivada_cocina is distinct from OLD.archivada_cocina and public.current_role() not in ('admin', 'cocina') then
 --       raise exception 'Solo cocina o admin pueden archivar mesas';
 --     end if;
 --   end if;
